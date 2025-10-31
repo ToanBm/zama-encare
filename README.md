@@ -20,81 +20,48 @@ A secure health analysis platform built with Zama's FHEVM protocol, enabling pri
 
 ### App Flow
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     SETUP (One-time)                             │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  • Deploy contracts                                      │  │
-│  │  • Set backend oracle address in contract                │  │
-│  │  • Backend oracle-only ACL (no public decrypt)           │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+**Setup (One-time)**
+- Deploy contracts
+- Set backend oracle address in contract
+- Configure backend oracle-only ACL (no public decrypt)
 
-┌─────────────────────────────────────────────────────────────────┐
-│                         USER                                     │
-└───────────────────────┬─────────────────────────────────────────┘
-                        │
-                        │ 1. Enter Health Data (weight, height, etc.)
-                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    FRONTEND (Encryption)                         │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  • FHE Encrypt health data                               │  │
-│  │  • Create session & pay 10 USDC fee                      │  │
-│  │  • Submit encrypted data to contract                     │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└───────────────────────┬─────────────────────────────────────────┘
-                        │
-                        │ 2. submitEncryptedInput() + ACL
-                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              SMART CONTRACT (Blockchain)                         │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  • Store encrypted health data                           │  │
-│  │  • Grant ACL to backend oracle                           │  │
-│  │  • Emit SessionInputSubmitted event                      │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└───────────────────────┬─────────────────────────────────────────┘
-                        │
-                        │ 3. Event detection
-                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    BACKEND (ML Processing)                       │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  1. Listen for SessionInputSubmitted events              │  │
-│  │  2. getEncryptedInputs() from contract                   │  │
-│  │  3. Decrypt data with ACL permission                     │  │
-│  │  4. Run ML inference (Concrete ML) → Risk Level 0/1/2    │  │
-│  │  5. Encrypt result                                       │  │
-│  │  6. submitEncryptedResult() to contract                  │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└───────────────────────┬─────────────────────────────────────────┘
-                        │
-                        │ 4. Store encrypted result
-                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              SMART CONTRACT (Blockchain)                         │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  • Store encrypted result                                │  │
-│  │  • Grant ACL to user                                     │  │
-│  │  • Set resultReady = true                                │  │
-│  │  • Emit SessionResultSubmitted event                     │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└───────────────────────┬─────────────────────────────────────────┘
-                        │
-                        │ 5. Check status & decrypt
-                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    FRONTEND (Decryption)                         │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  • User clicks "Check" button                            │  │
-│  │  • getEncryptedResult() from contract                    │  │
-│  │  • Sign EIP-712 (user consent)                           │  │
-│  │  • Decrypt result using FHEVM                            │  │
-│  │  • Display health risk level                             │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-```
+**User Flow**
+
+1. **User initiates health session**
+   - Connect wallet
+   - Create new health session and pay 10 USDC fee
+   - Enter health data (weight, height, exercise level, diet score)
+   - Submit encrypted data
+
+2. **Frontend (Encryption)**
+   - FHE encrypt health data
+   - Submit encrypted data to contract via `submitEncryptedInput()` with ACL
+
+3. **Smart Contract (Blockchain)**
+   - Store encrypted health data
+   - Grant ACL permission to backend oracle
+   - Emit `SessionInputSubmitted` event
+
+4. **Backend (ML Processing)**
+   - Listen for `SessionInputSubmitted` events
+   - Fetch encrypted inputs via `getEncryptedInputs()` from contract
+   - Decrypt data with ACL permission
+   - Run ML inference using Concrete ML → Risk Level (0/1/2)
+   - Encrypt result
+   - Submit encrypted result via `submitEncryptedResult()` to contract
+
+5. **Smart Contract (Blockchain)**
+   - Store encrypted result
+   - Grant ACL permission to user
+   - Set `resultReady = true`
+   - Emit `SessionResultSubmitted` event
+
+6. **Frontend (Decryption)**
+   - User clicks "Check" button
+   - Fetch encrypted result via `getEncryptedResult()` from contract
+   - Sign EIP-712 typed data (user consent)
+   - Decrypt result using FHEVM
+   - Display health risk level
 
 ### Smart Contracts
 
@@ -124,11 +91,11 @@ A secure health analysis platform built with Zama's FHEVM protocol, enabling pri
 
 ### Backend (zama-health-backend)
 
-- **Event Listener (Auto)**: Lắng nghe `SessionInputSubmitted`, tự động xử lý
-- **Decryption (userDecrypt)**: Backend oracle giải mã bằng ACL (không publicDecrypt)
-- **ML Inference**: Gọi `ml_inference.py` (Concrete ML, Python 3.11)
-- **Encrypt & Submit**: Mã hóa risk level và `submitEncryptedResult`
-- **Operational**: Retry/backoff relayer, `/health` để giám sát; không cần REST API cho FE
+- **Event Listener (Auto)**: Listens for `SessionInputSubmitted` events and processes automatically
+- **Decryption (userDecrypt)**: Backend oracle decrypts using ACL permission (not publicDecrypt)
+- **ML Inference**: Calls `ml_inference.py` (Concrete ML, Python 3.11)
+- **Encrypt & Submit**: Encrypts risk level and submits via `submitEncryptedResult`
+- **Operational**: Retry/backoff for relayer, `/health` endpoint for monitoring; no REST API needed for frontend
 
 ## 🚀 Setup
 

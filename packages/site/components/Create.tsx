@@ -236,6 +236,7 @@ export const Create = () => {
   const [decrypting, setDecrypting] = useState(false);
   const [decryptedResult, setDecryptedResult] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [readSessions, setReadSessions] = useState<Set<number>>(new Set());
 
   const fhevmContextMain = useFhevmContext();
   const { chainId } = fhevmContextMain;
@@ -246,6 +247,33 @@ export const Create = () => {
     ethersReadonlyProvider,
     chainId: chainId ?? null,
   });
+
+  // Load read sessions from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("readHealthSessions");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as number[];
+          setReadSessions(new Set(parsed));
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }, []);
+
+  // Mark session as read
+  const markAsRead = useCallback((sessionId: number) => {
+    setReadSessions((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(sessionId);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("readHealthSessions", JSON.stringify(Array.from(newSet)));
+      }
+      return newSet;
+    });
+  }, []);
 
   const openStatusModal = async (sessionId: number) => {
     setIsStatusOpen(true);
@@ -259,6 +287,8 @@ export const Create = () => {
         setDecryptedResult(null);
       } else {
         setDecryptedResult(value.toString());
+        // Mark as read when result is successfully decrypted
+        markAsRead(sessionId);
       }
     } catch (e: unknown) {
       setStatusError(e instanceof Error ? e.message : "Failed to check status");
@@ -342,15 +372,22 @@ export const Create = () => {
             >
               <div className="flex justify-between items-start mb-2">
                 <h3 className="text-lg font-semibold text-gray-900">Health Report #{session.sessionId}</h3>
-                <span
-                  className={`px-2 py-1 rounded text-xs ${
-                    session.resultReady
-                      ? "bg-[#009CF5]/30 text-gray-900"
-                      : "bg-yellow-500 text-gray-900"
-                  }`}
-                >
-                  {session.resultReady ? "Result Ready" : "Pending"}
-                </span>
+                <div className="flex items-center gap-2">
+                  {session.resultReady && readSessions.has(session.sessionId) && (
+                    <span className="px-2 py-1 rounded text-xs bg-gray-400 text-white">
+                      Read
+                    </span>
+                  )}
+                  <span
+                    className={`px-2 py-1 rounded text-xs ${
+                      session.resultReady
+                        ? "bg-[#009CF5]/30 text-gray-900"
+                        : "bg-yellow-500 text-gray-900"
+                    }`}
+                  >
+                    {session.resultReady ? "Result Ready" : "Pending"}
+                  </span>
+                </div>
               </div>
               <div className="border border-custom rounded-xl p-4 bg-primary">
                 {session.createdAt && (
@@ -388,7 +425,7 @@ export const Create = () => {
           <div className="relative w-full max-w-[480px] mx-4 bg-secondary border border-custom rounded-xl p-6">
             <button
               onClick={() => setIsStatusOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
+              className="absolute top-4 right-4 text-gray-400 hover:text-black text-3xl"
             >
               ×
             </button>
