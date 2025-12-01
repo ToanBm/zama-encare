@@ -8,8 +8,6 @@ import type {
   FhevmWindowType,
 } from "./fhevmTypes";
 
-import { isFhevmWindowType, RelayerSDKLoader } from "./RelayerSDKLoader";
-import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/bundle";
 import { publicKeyStorageGet, publicKeyStorageSet } from "./PublicKeyStorage";
 import { FhevmInstance, FhevmInstanceConfig } from "../fhevmTypes";
 
@@ -30,28 +28,31 @@ function throwFhevmError(
   throw new FhevmReactError(code, message, cause ? { cause } : undefined);
 }
 
-const isFhevmInitialized = (): boolean => {
-  if (typeof window === 'undefined' || !isFhevmWindowType(window, console.log)) {
-    return false;
-  }
-  return window.relayerSDK.__initialized__ === true;
-};
+let sdkInitialized = false;
 
-const fhevmLoadSDK: FhevmLoadSDKType = () => {
-  const loader = new RelayerSDKLoader({ trace: console.log });
-  return loader.load();
+const isFhevmInitialized = (): boolean => {
+  return sdkInitialized;
 };
 
 const fhevmInitSDK: FhevmInitSDKType = async (
   options?: FhevmInitSDKOptions
 ) => {
-  if (typeof window === 'undefined' || !isFhevmWindowType(window, console.log)) {
-    throw new Error("window.relayerSDK is not available");
+  if (typeof window === 'undefined') {
+    throw new Error("window is not available");
   }
-  const result = await window.relayerSDK.initSDK(options);
-  window.relayerSDK.__initialized__ = result;
+  
+  // Lấy SDK từ CDN (giống dice-game)
+  // @ts-ignore
+  const sdk = window.RelayerSDK || window.relayerSDK;
+  if (!sdk) {
+    throw new Error("RelayerSDK not loaded from CDN");
+  }
+  
+  const { initSDK } = sdk;
+  const result = await initSDK(options);
+  sdkInitialized = result;
   if (!result) {
-    throw new Error("window.relayerSDK.initSDK failed.");
+    throw new Error("initSDK failed");
   }
   return true;
 };
@@ -264,42 +265,35 @@ export const createFhevmInstance = async (parameters: {
 
   throwIfAborted();
 
-  if (typeof window === 'undefined' || !isFhevmWindowType(window, console.log)) {
-    notify("sdk-loading");
-
-    // Initialize WASM first, then create instance
-    try {
-      if (typeof window !== 'undefined') {
-        const { initSDK, createInstance, SepoliaConfig } = await import("@zama-fhe/relayer-sdk/bundle");
-        await initSDK(); // Load FHE WASM
-        const config = { ...SepoliaConfig, network: window.ethereum };
-        const sdk = await createInstance(config);
-        (window as any).relayerSDK = sdk;
-        notify("sdk-loaded");
-      }
-    } catch (error) {
-      // Fallback to CDN if static import fails
-      await fhevmLoadSDK();
-      throwIfAborted();
-      notify("sdk-loaded");
-    }
+  // Initialize SDK từ CDN (giống dice-game)
+  if (typeof window === 'undefined') {
+    throw new Error("FHEVM SDK chỉ chạy được ở client-side");
   }
 
-  // notify that state === "sdk-loaded"
+  // Lấy SDK từ CDN
+  // @ts-ignore
+  const sdk = window.RelayerSDK || window.relayerSDK;
+  if (!sdk) {
+    throw new Error("RelayerSDK not loaded from CDN. Make sure CDN script is loaded in layout.tsx");
+  }
 
   if (!isFhevmInitialized()) {
     notify("sdk-initializing");
-
-    // throws an error if failed
     await fhevmInitSDK();
     throwIfAborted();
-
     notify("sdk-initialized");
   }
 
-  const relayerSDK = (window as unknown as FhevmWindowType).relayerSDK;
+  // Lấy config từ SDK CDN
+  // CDN v0.3.0-5 vẫn export SepoliaConfig (tương đương ZamaEthereumConfig trong v0.9)
+  const { SepoliaConfig } = sdk;
+  if (!SepoliaConfig) {
+    throw new Error("SepoliaConfig not found in RelayerSDK from CDN");
+  }
+  
+  const ethereumConfig = SepoliaConfig;
 
-  const aclAddress = relayerSDK.SepoliaConfig.aclContractAddress;
+  const aclAddress = ethereumConfig.aclContractAddress;
   if (!checkIsAddress(aclAddress)) {
     throw new Error(`Invalid address: ${aclAddress}`);
   }
@@ -308,7 +302,7 @@ export const createFhevmInstance = async (parameters: {
   throwIfAborted();
 
   const config: FhevmInstanceConfig = {
-    ...relayerSDK.SepoliaConfig,
+    ...ethereumConfig,
     network: providerOrUrl,
     publicKey: pub.publicKey,
     publicParams: pub.publicParams,
@@ -317,7 +311,9 @@ export const createFhevmInstance = async (parameters: {
   // notify that state === "creating"
   notify("creating");
 
-  const instance = await relayerSDK.createInstance(config);
+  // Dùng createInstance từ SDK CDN
+  const { createInstance } = sdk;
+  const instance = await createInstance(config);
 
   // Save the key even if aborted
   await publicKeyStorageSet(

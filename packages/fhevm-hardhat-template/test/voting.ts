@@ -18,7 +18,7 @@ describe("SimpleFHEVoting manual vote test", function () {
 
     // ⭐ quan trọng: dynamic import vì SDK là ESM
     const sdk = await import("@zama-fhe/relayer-sdk");
-    const fhevm = await sdk.createInstance({ ...sdk.SepoliaConfig });
+    const fhevm = await sdk.createInstance({ ...sdk.ZamaEthereumConfig });
     const caller = voter.address;
 
     // 4. Tạo encrypted input (chọn Bob = index 1)

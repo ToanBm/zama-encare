@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 import { WalletButton } from "@/components/WalletButton";
@@ -21,6 +22,10 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
+        <Script
+          src="https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.umd.cjs"
+          strategy="beforeInteractive"
+        />
       </head>
       <body className="bg-primary text-foreground antialiased" suppressHydrationWarning>
         <div className="fixed inset-0 w-full h-full bg-primary z-[-20] min-w-[850px]" />

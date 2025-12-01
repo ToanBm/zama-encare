@@ -57,6 +57,12 @@ export class RelayerSDKLoader {
       script.async = true;
 
       script.onload = () => {
+        // Debug: log what's in window.relayerSDK
+        if (typeof window !== "undefined" && "relayerSDK" in window) {
+          console.log("[RelayerSDKLoader] window.relayerSDK keys:", Object.keys((window as any).relayerSDK || {}));
+          console.log("[RelayerSDKLoader] has ZamaEthereumConfig:", "ZamaEthereumConfig" in ((window as any).relayerSDK || {}));
+          console.log("[RelayerSDKLoader] has SepoliaConfig:", "SepoliaConfig" in ((window as any).relayerSDK || {}));
+        }
         if (!isFhevmWindowType(window, this._trace)) {
           console.log("[RelayerSDKLoader] script onload FAILED...");
           reject(
@@ -108,8 +114,10 @@ function isFhevmRelayerSDKType(
     trace?.("RelayerSDKLoader: relayerSDK.createInstance is invalid");
     return false;
   }
-  if (!objHasProperty(o, "SepoliaConfig", "object", trace)) {
-    trace?.("RelayerSDKLoader: relayerSDK.SepoliaConfig is invalid");
+  // Support both ZamaEthereumConfig (v0.9+) and SepoliaConfig (backward compatibility)
+  if (!objHasProperty(o, "ZamaEthereumConfig", "object", trace) && 
+      !objHasProperty(o, "SepoliaConfig", "object", trace)) {
+    trace?.("RelayerSDKLoader: relayerSDK.ZamaEthereumConfig or SepoliaConfig is invalid");
     return false;
   }
   if ("__initialized__" in o) {

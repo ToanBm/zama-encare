@@ -4,5 +4,5 @@
   Command: 'npm run genabi'
 */
 export const ZamaHealthAddresses = { 
-  "11155111": { address: "0xdE7508981BfCF86b71d409ab47174AE32b6CC809", chainId: 11155111, chainName: "sepolia" },
+  "11155111": { address: "0x0e4DF67c27f0dd13da9333221E52E2c9590F9678", chainId: 11155111, chainName: "sepolia" },
 };

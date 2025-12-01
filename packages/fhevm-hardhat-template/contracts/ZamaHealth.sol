@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 import { FHE, euint8, euint16, euint64, externalEuint8, externalEuint16, externalEuint64 } from "@fhevm/solidity/lib/FHE.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SepoliaConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
+import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
 
-contract ZamaHealth is SepoliaConfig {
+contract ZamaHealth is ZamaEthereumConfig {
     struct Session {
         address user;
         bool exists;

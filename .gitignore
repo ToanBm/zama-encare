@@ -1,10 +1,119 @@
+# Dependencies
+node_modules/
+packages/*/node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment variables - Root level
 .env
-node_modules
-.DS_Store
-packages/*/node_modules
-packages/*/.DS_Store
-packages/*/dist
+.env.*
+!.env.example
+!.env.template
+
+# Environment variables - All packages
 packages/*/.env
-packages/*/.turbo
-packages/*/coverage
-tmp*
+packages/*/.env.*
+!packages/*/.env.example
+!packages/*/.env.template
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Hardhat - Build artifacts
+packages/*/artifacts/
+packages/*/cache/
+packages/*/fhevmTemp/
+packages/*/types/
+packages/*/coverage/
+packages/*/coverage.json
+
+# Hardhat - Deployments (ALL networks - may contain sensitive addresses)
+packages/*/deployments/
+!packages/*/deployments/.gitkeep
+
+# Next.js
+packages/*/.next/
+packages/*/out/
+packages/*/build/
+packages/*/dist/
+packages/*/.turbo/
+packages/*/.vercel/
+
+# Testing
+packages/*/coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Build outputs
+*.tsbuildinfo
+.eslintcache
+
+# Secrets and keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+*.backend_keys
+secrets/
+keys/
+*.secret
+
+# Python (if any)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*~
+*.old
+
+# Lock files (keep only one)
+bun.lockb
