@@ -17,6 +17,12 @@ packages/*/.env.*
 !packages/*/.env.example
 !packages/*/.env.template
 
+# Backend environment variables
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.template
+
 # OS files
 .DS_Store
 .DS_Store?
@@ -65,6 +71,10 @@ yarn-error.log*
 lerna-debug.log*
 pnpm-debug.log*
 
+# PM2 and application logs
+backend/logs/
+backend/*.log
+
 # Temporary files
 tmp/
 temp/
@@ -103,6 +113,10 @@ env/
 *.egg-info/
 dist/
 build/
+
+# Backend Python virtual environment
+backend/.venv/
+backend/venv/
 
 # Database
 *.db
