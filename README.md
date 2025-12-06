@@ -257,11 +257,6 @@ const decrypted = await fhevmInstance.userDecrypt(...);
 - [FHEVM Hardhat Template](https://github.com/zama-ai/fhevm-hardhat-template)
 - [Concrete ML Documentation](https://docs.zama.ai/concrete-ml)
 
-## 🆘 Support
-
-- GitHub Issues: Report bugs or request features
-- Zama Discord: Community support and discussions
-- FHEVM Docs: Official protocol documentation
 
 ---
 
